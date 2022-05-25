@@ -10,7 +10,7 @@ mod brain;
 
 #[derive(Debug)]
 pub struct CreatureData {
-    pub position: (isize, isize)
+    pub position: (usize, usize)
 }
 
 pub struct Creature<'a> {
