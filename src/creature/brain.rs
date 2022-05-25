@@ -1,27 +1,40 @@
-use crate::{CreatureData, NeuronConnectionTemplate, NeuronTemplate};
-use crate::creature::neuron::{NeuralConnection, NeuronType};
+use crate::{CreatureData, NeuronConnectionList, NeuronTemplate, SimulationData};
+use crate::creature::neuron::{NeuronType};
 
 pub struct NeuronValues {
     pub internal_neurons: Vec<f32>,
     pub output_neurons: Vec<f32>,
 }
 
+impl NeuronValues {
+    fn new(neuron_template: &NeuronTemplate) -> NeuronValues {
+        NeuronValues {
+            internal_neurons: neuron_template.internal_neurons.clone(),
+            output_neurons: vec![0.0; neuron_template.output_neurons.len()]
+        }
+    }
+}
+
 pub struct Brain<'a> {
     neuron_template: &'a NeuronTemplate,
-    neural_connections: &'a Vec<NeuralConnection>,
+    neuron_connection_list: NeuronConnectionList,
     neuron_values: NeuronValues,
 }
 
 impl<'a> Brain<'a> {
-    pub fn new(neuron_template: &'a NeuronTemplate, neuron_connection_template: &'a NeuronConnectionTemplate) -> Brain<'a> {
-        let conn_list = neuron_connection_template.get_connection_list();
+    pub fn new(neuron_template: &'a NeuronTemplate, neuron_connection_list: NeuronConnectionList) -> Brain<'a> {
         Brain {
             neuron_template,
-            neural_connections: &conn_list,
-            neuron_values: NeuronValues {
-                internal_neurons: neuron_template.internal_neurons.clone(),
-                output_neurons: vec![0.0; neuron_template.output_neurons.len()]
-            }
+            neuron_connection_list,
+            neuron_values: NeuronValues::new(neuron_template),
+        }
+    }
+
+    pub fn from_parents(neuron_template: &'a NeuronTemplate, parent_1: &NeuronConnectionList, parent_2: &NeuronConnectionList) -> Brain<'a> {
+        Brain {
+            neuron_template,
+            neuron_connection_list: NeuronConnectionList::from_parents(parent_1, parent_2),
+            neuron_values: NeuronValues::new(neuron_template),
         }
     }
 
@@ -33,12 +46,16 @@ impl<'a> Brain<'a> {
         &self.neuron_values
     }
 
-    pub fn simulate(&mut self, creature_data: &CreatureData) {
+    pub fn get_neuron_connection_list(&self) -> &NeuronConnectionList {
+        &self.neuron_connection_list
+    }
+
+    pub fn simulate(&mut self, creature_data: &CreatureData, simulation_data: &SimulationData) {
         let mut internal_neuron_accumulator: Vec<f32> = vec![0.0; self.neuron_template.internal_neurons.len()];
         let mut output_neuron_accumulator: Vec<f32> = vec![0.0; self.neuron_template.output_neurons.len()];
 
         let mut neuron_outputs_computed = false;
-        self.neural_connections.iter().for_each(|connection| {
+        self.neuron_connection_list.get_connection_list().iter().for_each(|connection| {
             if connection.to.neuron_type == NeuronType::Output && !neuron_outputs_computed {
                 // All input & internal neurons are processed, store their data for next simulation run
 
@@ -57,10 +74,12 @@ impl<'a> Brain<'a> {
                         .input_neurons
                         .get(connection.from.neuron_index)
                         .expect("Input neuron not found in template")
-                        .get_value(&creature_data)
+                        .get_value(&creature_data, &simulation_data)
                 },
                 NeuronType::Internal => {
-                    *self.neuron_values.internal_neurons.get(connection.from.neuron_index).expect("Internal neuron not found in brain values")
+                    let value = *self.neuron_values.internal_neurons.get(connection.from.neuron_index).expect("Internal neuron not found in brain values");
+                    assert!(value.abs() <= 1.0);
+                    value
                 }
                 NeuronType::Output => {
                     *self.neuron_values.output_neurons.get(connection.from.neuron_index).expect("Output neuron not found in brain values")

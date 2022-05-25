@@ -1,4 +1,4 @@
-use crate::{CreatureData, InputNeuron, Neuron};
+use crate::{CreatureData, InputNeuron, Neuron, SimulationData};
 
 pub struct HorizontalPositionInputNeuron;
 
@@ -9,8 +9,8 @@ impl Neuron for HorizontalPositionInputNeuron {
 }
 
 impl InputNeuron for HorizontalPositionInputNeuron {
-    fn get_value(&self, creature_data: &CreatureData) -> f32 {
-        creature_data.position.0 as f32
+    fn get_value(&self, creature_data: &CreatureData, simulation_data: &SimulationData) -> f32 {
+        creature_data.position.0 as f32 / simulation_data.map_size.0 as f32
     }
 }
 
@@ -23,7 +23,7 @@ impl Neuron for VerticalPositionInputNeuron {
 }
 
 impl InputNeuron for VerticalPositionInputNeuron {
-    fn get_value(&self, creature_data: &CreatureData) -> f32 {
-        creature_data.position.1 as f32
+    fn get_value(&self, creature_data: &CreatureData, simulation_data: &SimulationData) -> f32 {
+        creature_data.position.1 as f32 / simulation_data.map_size.1 as f32
     }
 }
