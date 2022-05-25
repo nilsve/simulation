@@ -1,6 +1,8 @@
 extern crate core;
 
 use std::ops::Range;
+use macroquad::input::{is_mouse_button_down, mouse_position_local, MouseButton};
+use macroquad::prelude::mouse_position;
 use rand::{Rng, thread_rng};
 use crate::creature::{Creature, CreatureData, neurons, SimulationData};
 use crate::creature::neuron::{InputNeuron, Neuron, OutputNeuron};
@@ -26,6 +28,7 @@ async fn main() {
         Box::new(neurons::input::simulation_step::SimulationStepInputNeuron {}),
         Box::new(neurons::input::distance::HorizontalWallDistanceInputNeuron {}),
         Box::new(neurons::input::distance::VerticalWallDistanceInputNeuron {}),
+        Box::new(neurons::input::touching_kill_region::TouchingKillRegionNeuron {}),
     ];
 
     let output_neurons: Vec<Box<dyn OutputNeuron>> = vec![
@@ -37,33 +40,49 @@ async fn main() {
 
     let mut creatures = initialise_creatures(&neuron_template);
 
-    let kill_regions: [KillRegion; 5] = [
-        KillRegion { // Left side of screen
-            top_left: (0, 0),
-            bottom_right: (10, 100),
-        },
-        KillRegion { // Right side of screen
-            top_left: (90, 0),
-            bottom_right: (100, 100),
-        },
-        KillRegion { // Top side of screen
-            top_left: (0, 0),
-            bottom_right: (100, 10),
-        },
-        KillRegion { // Bottom side of screen
-            top_left: (10, 90),
-            bottom_right: (90, 100),
-        },
-        KillRegion { // Center of screen
-            top_left: (40, 40),
-            bottom_right: (60, 60),
-        },
-    ];
+    let mut moving_region = KillRegion {
+        top_left: (0,0),
+        bottom_right: (10,10),
+    };
 
     let mut generation = 0;
     loop {
+
+        let kill_regions: [&KillRegion; 6] = [
+            &KillRegion { // Left side of screen
+                top_left: (0, 0),
+                bottom_right: (10, 100),
+            },
+            &KillRegion { // Right side of screen
+                top_left: (90, 0),
+                bottom_right: (100, 100),
+            },
+            &KillRegion { // Top side of screen
+                top_left: (0, 0),
+                bottom_right: (100, 10),
+            },
+            &KillRegion { // Bottom side of screen
+                top_left: (10, 90),
+                bottom_right: (90, 100),
+            },
+            &KillRegion { // Center of screen
+                top_left: (40, 40),
+                bottom_right: (60, 60),
+            },
+            &moving_region
+        ];
+
         for simulation_step in 0..STEP_COUNT {
-            creatures.iter_mut().for_each(|creature| creature.simulate(SimulationData { simulation_step, total_steps: STEP_COUNT, map_size: (100, 100) }));
+            creatures.iter_mut().for_each(|creature| {
+                let simulation_data = SimulationData {
+                    simulation_step,
+                    total_steps: STEP_COUNT,
+                    map_size: (100, 100),
+                    kill_regions: &kill_regions,
+                };
+
+                creature.simulate(simulation_data)
+            });
 
             render_screen(creatures.as_slice(), &kill_regions).await;
         }
@@ -86,6 +105,22 @@ async fn main() {
         }).collect();
 
         generation += 1;
+
+
+        if is_mouse_button_down(MouseButton::Left) {
+            let pos = mouse_position();
+
+            let width = moving_region.bottom_right.0 - moving_region.top_left.0;
+            let height = moving_region.bottom_right.1 - moving_region.top_left.1;
+
+            moving_region.top_left.0 = pos.0 as usize / 10;
+            moving_region.top_left.1 = pos.1 as usize / 10;
+
+            moving_region.bottom_right.0 = pos.0 as usize / 10 + width;
+            moving_region.bottom_right.1 = pos.1 as usize / 10 + height;
+
+            println!("set moving region {:?}", moving_region);
+        }
 
         println!("Generation {}", generation);
     }

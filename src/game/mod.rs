@@ -1,3 +1,6 @@
+use std::os::unix::raw::uid_t;
+
+#[derive(Debug)]
 pub struct KillRegion {
     pub(crate) top_left: (usize, usize),
     pub(crate) bottom_right: (usize, usize),
@@ -14,6 +17,14 @@ impl KillRegion {
         }
 
         true
+    }
+
+    pub fn move_by(&mut self, offset: (isize, isize)) {
+        self.top_left.0 = ((self.top_left.0 as isize) + offset.0).clamp(0, 100) as usize;
+        self.top_left.1 = ((self.top_left.1 as isize) + offset.1).clamp(0, 100) as usize;
+
+        self.bottom_right.0 = ((self.bottom_right.0 as isize) + offset.0).clamp(0, 100) as usize;
+        self.bottom_right.1 = ((self.bottom_right.1 as isize) + offset.1).clamp(0, 100) as usize;
     }
 }
 

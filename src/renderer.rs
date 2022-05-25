@@ -4,7 +4,7 @@ use crate::{Creature, KillRegion};
 const ROWS: f32 = 100.0;
 const COLUMNS: f32 = 100.0;
 
-pub async fn render_screen(creatures: &[Creature<'_>], kill_regions: &[KillRegion]) {
+pub async fn render_screen(creatures: &[Creature<'_>], kill_regions: &[&KillRegion]) {
     clear_background(WHITE);
 
     let screen_height = screen_height();

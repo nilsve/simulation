@@ -1,5 +1,5 @@
-use std::cmp;
 use crate::{CreatureData, InputNeuron, Neuron, SimulationData};
+use crate::neurons::input::closest_distance_to_point;
 
 pub struct HorizontalWallDistanceInputNeuron;
 
@@ -7,12 +7,6 @@ impl Neuron for HorizontalWallDistanceInputNeuron {
     fn get_name(&self) -> &'static str {
         "Horizontal wall distance neuron"
     }
-}
-
-fn closest_distance_to_point(from: usize, point_1: usize, point_2: usize) -> usize {
-    let d1 = (from as isize - point_1 as isize).abs() as usize;
-    let d2 = (from as isize - point_2 as isize).abs() as usize;
-    cmp::min(d1, d2)
 }
 
 impl InputNeuron for HorizontalWallDistanceInputNeuron {

@@ -1,6 +1,6 @@
 use brain::Brain;
 use crate::creature::neuron_template::NeuronTemplate;
-use crate::NeuronConnectionList;
+use crate::{KillRegion, NeuronConnectionList};
 
 pub mod neuron;
 pub mod neuron_template;
@@ -19,10 +19,11 @@ pub struct Creature<'a> {
 }
 
 #[derive(Default)]
-pub struct SimulationData {
+pub struct SimulationData<'a> {
     pub simulation_step: usize,
     pub total_steps: usize,
     pub map_size: (usize, usize),
+    pub kill_regions: &'a [&'a KillRegion],
 }
 
 impl<'a> Creature<'a> {
